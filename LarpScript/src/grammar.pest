@@ -14,33 +14,151 @@ statement = {
 }
 
 variable_decl = { "cook" ~ identifier ~ ("=" ~ expr)? ~ ";" }
+
 constant_decl = { "locked" ~ identifier ~ "=" ~ expr ~ ";" }
-print_stmt    = { "yap" ~ "(" ~ expr ~ ")" ~ ";" }
-if_stmt   = { "if" ~ expr ~ "{" ~ statement* ~ "}" ~ ("else" ~ "{" ~ statement* ~ "}")? }
-loop_stmt = { "loop" ~ expr ~ "{" ~ statement* ~ "}" }
-break_stmt    = { "bet" ~ ";" }
+
+print_stmt = { "yap" ~ "(" ~ expr ~ ")" ~ ";" }
+
+if_stmt = {
+    "if" ~ expr
+    ~ "{"
+    ~ statement*
+    ~ "}"
+    ~ ("else" ~ "{" ~ statement* ~ "}")?
+}
+
+loop_stmt = {
+    "loop" ~ expr
+    ~ "{"
+    ~ statement*
+    ~ "}"
+}
+
+break_stmt = { "bet" ~ ";" }
+
 continue_stmt = { "clown" ~ ";" }
-function_decl = { "fun" ~ identifier ~ "(" ~ (identifier ~ ("," ~ identifier)*)? ~ ")" ~ "{" ~ statement* ~ "}" }
-return_stmt   = { "slay" ~ expr? ~ ";" }
+
+function_decl = {
+    "fun" ~ identifier
+    ~ "(" ~ (identifier ~ ("," ~ identifier)*)? ~ ")"
+    ~ "{"
+    ~ statement*
+    ~ "}"
+}
+
+return_stmt = { "slay" ~ expr? ~ ";" }
+
 assignment = { identifier ~ "=" ~ expr ~ ";" }
-expr = { term ~ (binary_op ~ term)* }
-term = { unary_op? ~ primary }
-primary = { 
-    literal 
-  | identifier 
-  | "(" ~ expr ~ ")" 
+
+
+expression = { SOI ~ expr ~ EOI }
+
+expr = {
+    prefix* ~ primary ~ postfix*
+    ~ (infix ~ prefix* ~ primary ~ postfix*)*
 }
-literal = { boolean | null_lit | number | string }
-boolean = { "fax" | "cap" }
-null_lit = { "nah" }
-unary_op  = { "not" | "-" }
-binary_op = { "and" | "or" | "+" | "-" | "*" | "/" | "==" | "!=" | "<" | ">" }
-identifier = @{ !keyword ~ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
-keyword = {
-    ("cook" | "locked" | "yap" | "if" | "else" | "loop" | "bet" | "clown" | "fun" | "slay" | "fax" | "cap" | "nah" | "and" | "or" | "not") 
-    ~ !ASCII_ALPHANUMERIC
+
+infix = _{
+    logical_or
+  | logical_and
+  | equal
+  | not_equal
+  | less_than
+  | greater_than
+  | add
+  | subtract
+  | multiply
+  | divide
+  | power
 }
-number = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
-string = @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
-WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-COMMENT    = _{ "//" ~ (!"\n" ~ ANY)* ~ "\n" }
+
+prefix = _{
+    logical_not
+  | negative
+}
+
+postfix = _{ fac }
+
+logical_or = { "or" }
+logical_and = { "and" }
+logical_not = { "not" }
+
+equal = { "==" }
+not_equal = { "!=" }
+less_than = { "<" }
+greater_than = { ">" }
+
+add = { "+" }
+subtract = { "-" }
+multiply = { "*" }
+divide = { "/" }
+power = { "^" }
+
+negative = { "-" }
+fac = { "!" }
+
+
+primary = _{
+    number
+  | string
+  | boolean
+  | null
+  | identifier
+  | "(" ~ expr ~ ")"
+}
+
+
+number = @{
+    ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)?
+}
+
+string = @{
+    "\"" ~ (!"\"" ~ ANY)* ~ "\""
+}
+
+boolean = {
+    "fax"
+  | "cap"
+}
+
+null = { "nah" }
+
+
+identifier = @{
+    !keyword
+    ~ ASCII_ALPHA
+    ~ (ASCII_ALPHANUMERIC | "_")*
+}
+
+keyword = _{
+    (
+        "cook"
+      | "locked"
+      | "yap"
+      | "if"
+      | "else"
+      | "loop"
+      | "bet"
+      | "clown"
+      | "fun"
+      | "slay"
+      | "fax"
+      | "cap"
+      | "nah"
+      | "and"
+      | "or"
+      | "not"
+    )
+    ~ !(ASCII_ALPHANUMERIC | "_")
+}
+
+WHITESPACE = _{
+    " "
+  | "\t"
+  | "\r"
+  | "\n"
+}
+
+COMMENT = _{
+    "//" ~ (!"\n" ~ ANY)*
+}
