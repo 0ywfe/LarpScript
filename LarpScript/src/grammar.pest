@@ -1,5 +1,4 @@
 program = { SOI ~ statement* ~ EOI }
-
 statement = {
     variable_decl
   | constant_decl
@@ -12,13 +11,9 @@ statement = {
   | return_stmt
   | assignment
 }
-
 variable_decl = { "cook" ~ identifier ~ ("=" ~ expr)? ~ ";" }
-
 constant_decl = { "locked" ~ identifier ~ "=" ~ expr ~ ";" }
-
 print_stmt = { "yap" ~ "(" ~ expr ~ ")" ~ ";" }
-
 if_stmt = {
     "if" ~ expr
     ~ "{"
@@ -26,18 +21,14 @@ if_stmt = {
     ~ "}"
     ~ ("else" ~ "{" ~ statement* ~ "}")?
 }
-
 loop_stmt = {
     "loop" ~ expr
     ~ "{"
     ~ statement*
     ~ "}"
 }
-
 break_stmt = { "bet" ~ ";" }
-
 continue_stmt = { "clown" ~ ";" }
-
 function_decl = {
     "fun" ~ identifier
     ~ "(" ~ (identifier ~ ("," ~ identifier)*)? ~ ")"
@@ -45,19 +36,13 @@ function_decl = {
     ~ statement*
     ~ "}"
 }
-
 return_stmt = { "slay" ~ expr? ~ ";" }
-
 assignment = { identifier ~ "=" ~ expr ~ ";" }
-
-
 expression = { SOI ~ expr ~ EOI }
-
 expr = {
     prefix* ~ primary ~ postfix*
     ~ (infix ~ prefix* ~ primary ~ postfix*)*
 }
-
 infix = _{
     logical_or
   | logical_and
@@ -71,33 +56,25 @@ infix = _{
   | divide
   | power
 }
-
 prefix = _{
     logical_not
   | negative
 }
-
 postfix = _{ fac }
-
 logical_or = { "or" }
 logical_and = { "and" }
 logical_not = { "not" }
-
 equal = { "==" }
 not_equal = { "!=" }
 less_than = { "<" }
 greater_than = { ">" }
-
 add = { "+" }
 subtract = { "-" }
 multiply = { "*" }
 divide = { "/" }
 power = { "^" }
-
 negative = { "-" }
 fac = { "!" }
-
-
 primary = _{
     number
   | string
@@ -106,30 +83,22 @@ primary = _{
   | identifier
   | "(" ~ expr ~ ")"
 }
-
-
 number = @{
     ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)?
 }
-
 string = @{
     "\"" ~ (!"\"" ~ ANY)* ~ "\""
 }
-
 boolean = {
     "fax"
   | "cap"
 }
-
 null = { "nah" }
-
-
 identifier = @{
     !keyword
     ~ ASCII_ALPHA
     ~ (ASCII_ALPHANUMERIC | "_")*
 }
-
 keyword = _{
     (
         "cook"
@@ -151,14 +120,11 @@ keyword = _{
     )
     ~ !(ASCII_ALPHANUMERIC | "_")
 }
-
 WHITESPACE = _{
     " "
   | "\t"
   | "\r"
   | "\n"
-}
-
-COMMENT = _{
+}COMMENT = _{
     "//" ~ (!"\n" ~ ANY)*
 }
