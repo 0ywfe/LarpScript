@@ -1,0 +1,46 @@
+program = { SOI ~ statement* ~ EOI }
+
+statement = {
+    variable_decl
+  | constant_decl
+  | print_stmt
+  | if_stmt
+  | loop_stmt
+  | break_stmt
+  | continue_stmt
+  | function_decl
+  | return_stmt
+  | assignment
+}
+
+variable_decl = { "cook" ~ identifier ~ ("=" ~ expr)? ~ ";" }
+constant_decl = { "locked" ~ identifier ~ "=" ~ expr ~ ";" }
+print_stmt    = { "yap" ~ "(" ~ expr ~ ")" ~ ";" }
+if_stmt   = { "if" ~ expr ~ "{" ~ statement* ~ "}" ~ ("else" ~ "{" ~ statement* ~ "}")? }
+loop_stmt = { "loop" ~ expr ~ "{" ~ statement* ~ "}" }
+break_stmt    = { "bet" ~ ";" }
+continue_stmt = { "clown" ~ ";" }
+function_decl = { "fun" ~ identifier ~ "(" ~ (identifier ~ ("," ~ identifier)*)? ~ ")" ~ "{" ~ statement* ~ "}" }
+return_stmt   = { "slay" ~ expr? ~ ";" }
+assignment = { identifier ~ "=" ~ expr ~ ";" }
+expr = { term ~ (binary_op ~ term)* }
+term = { unary_op? ~ primary }
+primary = { 
+    literal 
+  | identifier 
+  | "(" ~ expr ~ ")" 
+}
+literal = { boolean | null_lit | number | string }
+boolean = { "fax" | "cap" }
+null_lit = { "nah" }
+unary_op  = { "not" | "-" }
+binary_op = { "and" | "or" | "+" | "-" | "*" | "/" | "==" | "!=" | "<" | ">" }
+identifier = @{ !keyword ~ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+keyword = {
+    ("cook" | "locked" | "yap" | "if" | "else" | "loop" | "bet" | "clown" | "fun" | "slay" | "fax" | "cap" | "nah" | "and" | "or" | "not") 
+    ~ !ASCII_ALPHANUMERIC
+}
+number = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+string = @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT    = _{ "//" ~ (!"\n" ~ ANY)* ~ "\n" }
