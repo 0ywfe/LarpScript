@@ -36,8 +36,8 @@ pub fn evaluate_primary(primary: Pair<Rule>) -> Result<Value, RuntimeError> {
             Ok(Value::String(value.to_string()))
         }
         Rule::boolean => match primary.as_str() {
-            "true" => Ok(Value::Boolean(true)),
-            "false" => Ok(Value::Boolean(false)),
+            "fax" => Ok(Value::Boolean(true)),
+            "cap" => Ok(Value::Boolean(false)),
             _ => Err(RuntimeError::InvalidBoolean),
         },
         Rule::null => Ok(Value::Null),
@@ -50,6 +50,10 @@ pub fn apply_unary(operator: Pair<Rule>, operand: Value) -> Result<Value, Runtim
     match operator.as_rule() {
         Rule::negative => match operand {
             Value::Number(num) => Ok(Value::Number(-num)),
+            _ => Err(RuntimeError::InvalidOperandType),
+        },
+        Rule::logical_not => match operand {
+            Value::Boolean(value) => Ok(Value::Boolean(!value)),
             _ => Err(RuntimeError::InvalidOperandType),
         },
         rule => Err(RuntimeError::UnexpectedToken(rule)),
