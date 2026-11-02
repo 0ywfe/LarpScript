@@ -36,7 +36,7 @@ function_decl = {
     ~ statement*
     ~ "}"
 }
-return_stmt = { "slay" ~ expr? ~ ";" }
+return_stmt = { "mog" ~ expr? ~ ";" }
 assignment = { identifier ~ "=" ~ expr ~ ";" }
 expression = { SOI ~ expr ~ EOI }
 expr = {
@@ -110,7 +110,7 @@ keyword = _{
       | "bet"
       | "clown"
       | "fun"
-      | "slay"
+      | "mog"
       | "fax"
       | "cap"
       | "nah"

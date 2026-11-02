@@ -23,7 +23,7 @@ LarpScript uses custom keywords for its language constructs.
 | `bet` | Break statement |
 | `clown` | Continue statement |
 | `fun` | Function declaration |
-| `slay` | Return statement |
+| `mog` | Return statement |
 | `and` | Logical AND |
 | `or` | Logical OR |
 | `not` | Logical NOT |
@@ -104,7 +104,7 @@ loop age < 25 {
 ```larp
 fun greet(name) {
     yap("Hello!");
-    slay;
+    mog;
 }
 ```
 
