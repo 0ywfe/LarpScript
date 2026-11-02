@@ -1,5 +1,5 @@
-use LarpScript::evaluator::evaluate_expression;
-use LarpScript::parser::parse_expression;
+use larp_script::evaluator::evaluate_expression;
+use larp_script::parser::parse_expression;
 use std::{env, fs, process};
 
 fn main() {
