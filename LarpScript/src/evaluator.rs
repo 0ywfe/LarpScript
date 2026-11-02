@@ -1,15 +1,23 @@
 use crate::error::RuntimeError;
 use crate::parser::Rule;
 use crate::runtime::Value;
-
 use pest::iterators::Pair;
 use pest::pratt_parser::{Assoc, Op, PrattParser};
 use std::sync::LazyLock;
 
 static PRATT_PARSER: LazyLock<PrattParser<Rule>> = LazyLock::new(|| {
     PrattParser::new()
+        .op(Op::infix(Rule::logical_or, Assoc::Left))
+        .op(Op::infix(Rule::logical_and, Assoc::Left))
+        .op(Op::infix(Rule::equal, Assoc::Left) | Op::infix(Rule::not_equal, Assoc::Left))
+        .op(Op::infix(Rule::greater_than, Assoc::Left)
+            | Op::infix(Rule::less_than, Assoc::Left)
+            | Op::infix(Rule::greater_equal, Assoc::Left)
+            | Op::infix(Rule::less_equal, Assoc::Left))
         .op(Op::infix(Rule::add, Assoc::Left) | Op::infix(Rule::subtract, Assoc::Left))
-        .op(Op::infix(Rule::multiply, Assoc::Left) | Op::infix(Rule::divide, Assoc::Left))
+        .op(Op::infix(Rule::multiply, Assoc::Left)
+            | Op::infix(Rule::divide, Assoc::Left)
+            | Op::infix(Rule::modulo, Assoc::Left))
         .op(Op::infix(Rule::power, Assoc::Right))
         .op(Op::prefix(Rule::negative) | Op::prefix(Rule::logical_not))
         .op(Op::postfix(Rule::fac))
@@ -85,22 +93,65 @@ pub fn apply_binary(
     operator: Pair<Rule>,
     right: Value,
 ) -> Result<Value, RuntimeError> {
-    let (left, right) = match (left, right) {
-        (Value::Number(l), Value::Number(r)) => (l, r),
-        _ => return Err(RuntimeError::InvalidOperandType),
-    };
-    match operator.as_rule() {
-        Rule::add => Ok(Value::Number(left + right)),
-        Rule::subtract => Ok(Value::Number(left - right)),
-        Rule::multiply => Ok(Value::Number(left * right)),
-        Rule::divide => {
-            if right == 0.0 {
-                Err(RuntimeError::DivisionByZero)
-            } else {
-                Ok(Value::Number(left / right))
+    let rule = operator.as_rule();
+    match rule {
+        Rule::equal => Ok(Value::Boolean(left == right)),
+
+        Rule::not_equal => Ok(Value::Boolean(left != right)),
+        Rule::logical_and | Rule::logical_or => match (left, right) {
+            (Value::Boolean(l), Value::Boolean(r)) => {
+                let result = match rule {
+                    Rule::logical_and => l && r,
+                    Rule::logical_or => l || r,
+                    _ => unreachable!(),
+                };
+                Ok(Value::Boolean(result))
+            }
+            _ => Err(RuntimeError::InvalidOperandType),
+        },
+        Rule::add => match (left, right) {
+            (Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
+            (Value::String(l), Value::String(r)) => Ok(Value::String(l + &r)),
+            _ => Err(RuntimeError::InvalidOperandType),
+        },
+        Rule::subtract
+        | Rule::multiply
+        | Rule::divide
+        | Rule::modulo
+        | Rule::power
+        | Rule::greater_than
+        | Rule::less_than
+        | Rule::greater_equal
+        | Rule::less_equal => {
+            let (l, r) = match (left, right) {
+                (Value::Number(l), Value::Number(r)) => (l, r),
+                _ => return Err(RuntimeError::InvalidOperandType),
+            };
+            match rule {
+                Rule::subtract => Ok(Value::Number(l - r)),
+                Rule::multiply => Ok(Value::Number(l * r)),
+                Rule::divide => {
+                    if r == 0.0 {
+                        Err(RuntimeError::DivisionByZero)
+                    } else {
+                        Ok(Value::Number(l / r))
+                    }
+                }
+                Rule::modulo => {
+                    if r == 0.0 {
+                        Err(RuntimeError::DivisionByZero)
+                    } else {
+                        Ok(Value::Number(l % r))
+                    }
+                }
+                Rule::power => Ok(Value::Number(l.powf(r))),
+                Rule::greater_than => Ok(Value::Boolean(l > r)),
+                Rule::less_than => Ok(Value::Boolean(l < r)),
+                Rule::greater_equal => Ok(Value::Boolean(l >= r)),
+                Rule::less_equal => Ok(Value::Boolean(l <= r)),
+                _ => unreachable!(),
             }
         }
-        Rule::power => Ok(Value::Number(left.powf(right))),
         rule => Err(RuntimeError::UnexpectedToken(rule)),
     }
 }
