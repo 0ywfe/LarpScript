@@ -48,33 +48,39 @@ infix = _{
   | logical_and
   | equal
   | not_equal
+  | greater_equal
+  | less_equal
   | less_than
   | greater_than
   | add
   | subtract
   | multiply
   | divide
+  | modulo
   | power
 }
-prefix = _{
-    logical_not
-  | negative
-}
-postfix = _{ fac }
 logical_or = { "or" }
 logical_and = { "and" }
 logical_not = { "not" }
 equal = { "==" }
 not_equal = { "!=" }
+greater_equal = { ">=" }
+less_equal = { "<=" }
 less_than = { "<" }
 greater_than = { ">" }
 add = { "+" }
 subtract = { "-" }
 multiply = { "*" }
 divide = { "/" }
+modulo = { "%" }
 power = { "^" }
 negative = { "-" }
-fac = { "!" }
+fac = { "!" ~ !"=" }
+prefix = _{
+    logical_not
+  | negative
+}
+postfix = _{ fac }
 primary = _{
     number
   | string
