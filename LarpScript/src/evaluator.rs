@@ -96,7 +96,6 @@ pub fn apply_binary(
     let rule = operator.as_rule();
     match rule {
         Rule::equal => Ok(Value::Boolean(left == right)),
-
         Rule::not_equal => Ok(Value::Boolean(left != right)),
         Rule::logical_and | Rule::logical_or => match (left, right) {
             (Value::Boolean(l), Value::Boolean(r)) => {

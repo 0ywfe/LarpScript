@@ -131,6 +131,7 @@ WHITESPACE = _{
   | "\t"
   | "\r"
   | "\n"
-}COMMENT = _{
+}
+COMMENT = _{
     "//" ~ (!"\n" ~ ANY)*
 }
