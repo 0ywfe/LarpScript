@@ -23,5 +23,7 @@ fn main() {
         eprintln!("Runtime error: {err:?}");
         std::process::exit(1);
     });
-    println!("{value:?}");
+    println!("{value}");
 }
+
+// cargo run -- .\examples\hello.larp
