@@ -7,4 +7,8 @@ pub enum RuntimeError {
     InvalidOperandType,
     DivisionByZero,
     UnexpectedToken(Rule),
+    UndefinedVariable(String),
+    DuplicateVariable(String),
+    ConstantReassignment(String),
+    MalformedStatement,
 }
