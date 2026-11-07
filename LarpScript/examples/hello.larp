@@ -1,1 +1,16 @@
-1+1
+// Welcome to LarpScript
+
+yap(10 + 5);
+yap(10 - 5);
+yap(10 * 5);
+
+yap(2 + 3 * 4);
+yap((2 + 3) * 4);
+
+yap(2 ^ 3);
+yap(5!);
+
+yap(-10);
+yap(not fax);
+
+yap("Larp" + "Script");

@@ -54,6 +54,38 @@ pub fn evaluate_primary(primary: Pair<Rule>) -> Result<Value, RuntimeError> {
     }
 }
 
+fn evaluate_primary_with_lookup(
+    primary: Pair<Rule>,
+    lookup: &mut dyn FnMut(&str) -> Result<Value, RuntimeError>,
+) -> Result<Value, RuntimeError> {
+    match primary.as_rule() {
+        Rule::number => {
+            let number: f64 = primary
+                .as_str()
+                .parse()
+                .map_err(|_| RuntimeError::InvalidNumber)?;
+            Ok(Value::Number(number))
+        }
+        Rule::string => {
+            let raw = primary.as_str();
+            let value = raw
+                .strip_prefix('"')
+                .and_then(|s| s.strip_suffix('"'))
+                .unwrap_or(raw);
+            Ok(Value::String(value.to_string()))
+        }
+        Rule::boolean => match primary.as_str() {
+            "fax" => Ok(Value::Boolean(true)),
+            "cap" => Ok(Value::Boolean(false)),
+            _ => Err(RuntimeError::InvalidBoolean),
+        },
+        Rule::null => Ok(Value::Null),
+        Rule::identifier => lookup(primary.as_str()),
+        Rule::expr => evaluate_expression_with_lookup(primary, lookup),
+        rule => Err(RuntimeError::UnexpectedToken(rule)),
+    }
+}
+
 pub fn apply_unary(operator: Pair<Rule>, operand: Value) -> Result<Value, RuntimeError> {
     match operator.as_rule() {
         Rule::negative => match operand {
@@ -156,8 +188,16 @@ pub fn apply_binary(
 }
 
 pub fn evaluate_expression(expression: Pair<Rule>) -> Result<Value, RuntimeError> {
+    let mut lookup = |name: &str| Err(RuntimeError::UndefinedVariable(name.to_string()));
+    evaluate_expression_with_lookup(expression, &mut lookup)
+}
+
+pub fn evaluate_expression_with_lookup(
+    expression: Pair<Rule>,
+    lookup: &mut dyn FnMut(&str) -> Result<Value, RuntimeError>,
+) -> Result<Value, RuntimeError> {
     PRATT_PARSER
-        .map_primary(|primary| evaluate_primary(primary))
+        .map_primary(|primary| evaluate_primary_with_lookup(primary, lookup))
         .map_prefix(|operator, operand| apply_unary(operator, operand?))
         .map_postfix(|operand, operator| apply_postfix(operator, operand?))
         .map_infix(|left, operator, right| apply_binary(left?, operator, right?))

@@ -1,5 +1,4 @@
-use larp_script::evaluator::evaluate_expression;
-use larp_script::parser::parse_expression;
+use larp_script::interpreter::Interpreter;
 use std::{env, fs, process};
 
 fn main() {
@@ -8,22 +7,17 @@ fn main() {
         process::exit(1);
     };
     let source = fs::read_to_string(&path).unwrap_or_else(|error| {
-        eprintln!("Could not read file: {error}");
+        eprintln!("Could not read file '{path}': {error}");
         process::exit(1);
     });
-    let mut pairs = parse_expression(&source).unwrap_or_else(|error| {
-        eprintln!("Syntax error:\n{error}");
+    let mut interpreter = Interpreter::new();
+    if let Err(error) = interpreter.run_source(&source) {
+        eprintln!("Error: {error:?}");
         process::exit(1);
-    });
-    let expr = pairs
-        .next()
-        .and_then(|p| p.into_inner().next())
-        .expect("Expected an expression");
-    let value = evaluate_expression(expr).unwrap_or_else(|err| {
-        eprintln!("Runtime error: {err:?}");
-        std::process::exit(1);
-    });
-    println!("{value}");
+    }
+    for line in interpreter.take_output() {
+        println!("{line}");
+    }
 }
 
 // cargo run -- .\examples\hello.larp

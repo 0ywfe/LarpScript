@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use crate::error::RuntimeError;
 use crate::runtime::Value;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Binding {

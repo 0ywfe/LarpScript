@@ -1,5 +1,5 @@
 program = { SOI ~ statement* ~ EOI }
-statement = {
+statement = _{
     variable_decl
   | constant_decl
   | print_stmt
