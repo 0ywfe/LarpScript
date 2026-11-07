@@ -1,4 +1,6 @@
+
 program = { SOI ~ statement* ~ EOI }
+
 statement = _{
     variable_decl
   | constant_decl
@@ -10,128 +12,115 @@ statement = _{
   | function_decl
   | return_stmt
   | assignment
+  | expression_stmt
 }
+
 variable_decl = { "cook" ~ identifier ~ ("=" ~ expr)? ~ ";" }
 constant_decl = { "locked" ~ identifier ~ "=" ~ expr ~ ";" }
 print_stmt = { "yap" ~ "(" ~ expr ~ ")" ~ ";" }
+
 if_stmt = {
-    "if" ~ expr
-    ~ "{"
-    ~ statement*
-    ~ "}"
-    ~ ("else" ~ "{" ~ statement* ~ "}")?
+    "if" ~ expr ~ block
+    ~ ("else" ~ (if_stmt | block))?
 }
-loop_stmt = {
-    "loop" ~ expr
-    ~ "{"
-    ~ statement*
-    ~ "}"
-}
+
+loop_stmt = { "loop" ~ expr ~ block }
+block = { "{" ~ statement* ~ "}" }
+
 break_stmt = { "bet" ~ ";" }
 continue_stmt = { "clown" ~ ";" }
+
 function_decl = {
     "fun" ~ identifier
     ~ "(" ~ (identifier ~ ("," ~ identifier)*)? ~ ")"
-    ~ "{"
-    ~ statement*
-    ~ "}"
+    ~ block
 }
 return_stmt = { "mog" ~ expr? ~ ";" }
 assignment = { identifier ~ "=" ~ expr ~ ";" }
+
+expression_stmt = { expr ~ ";" }
 expression = { SOI ~ expr ~ EOI }
+
 expr = {
     prefix* ~ primary ~ postfix*
     ~ (infix ~ prefix* ~ primary ~ postfix*)*
 }
+
 infix = _{
-    logical_or
-  | logical_and
-  | equal
-  | not_equal
-  | greater_equal
-  | less_equal
-  | less_than
-  | greater_than
-  | add
-  | subtract
-  | multiply
-  | divide
-  | modulo
-  | power
+    logical_or | logical_and
+  | equal | not_equal
+  | greater_equal | less_equal | less_than | greater_than
+  | add | subtract | multiply | divide | modulo | power
 }
+
 logical_or = { "or" }
 logical_and = { "and" }
 logical_not = { "not" }
+
 equal = { "==" }
 not_equal = { "!=" }
 greater_equal = { ">=" }
 less_equal = { "<=" }
 less_than = { "<" }
 greater_than = { ">" }
+
 add = { "+" }
 subtract = { "-" }
 multiply = { "*" }
 divide = { "/" }
 modulo = { "%" }
 power = { "^" }
+
 negative = { "-" }
 fac = { "!" ~ !"=" }
-prefix = _{
-    logical_not
-  | negative
-}
+
+prefix = _{ logical_not | negative }
 postfix = _{ fac }
+
 primary = _{
-    number
+    call
+  | number
   | string
   | boolean
   | null
   | identifier
   | "(" ~ expr ~ ")"
 }
+
+call = {
+    identifier ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")"
+}
+
 number = @{
     ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)?
 }
+
 string = @{
-    "\"" ~ (!"\"" ~ ANY)* ~ "\""
+    "\"" ~ ("\\" ~ ANY | !"\"" ~ ANY)* ~ "\""
 }
-boolean = {
-    "fax"
-  | "cap"
-}
+
+boolean = { "fax" | "cap" }
 null = { "nah" }
+
 identifier = @{
-    !keyword
-    ~ ASCII_ALPHA
-    ~ (ASCII_ALPHANUMERIC | "_")*
+    !keyword ~ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")*
 }
+
 keyword = _{
     (
-        "cook"
-      | "locked"
-      | "yap"
-      | "if"
-      | "else"
-      | "loop"
-      | "bet"
-      | "clown"
-      | "fun"
-      | "mog"
-      | "fax"
-      | "cap"
-      | "nah"
-      | "and"
-      | "or"
-      | "not"
-    )
-    ~ !(ASCII_ALPHANUMERIC | "_")
+        "cook" | "locked" | "yap"
+      | "if" | "else" | "loop"
+      | "bet" | "clown"
+      | "fun" | "mog"
+      | "fax" | "cap" | "nah"
+      | "and" | "or" | "not"
+    ) ~ !(ASCII_ALPHANUMERIC | "_")
 }
+
 WHITESPACE = _{
-    " "
-  | "\t"
-  | "\r"
-  | "\n"
+    " " | "\t" | "\r" | "\n"
 }
+
 COMMENT = _{
     "//" ~ (!"\n" ~ ANY)*
 }

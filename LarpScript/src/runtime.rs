@@ -6,6 +6,11 @@ pub enum Value {
     String(String),
     Boolean(bool),
     Null,
+    Function {
+        name: String,
+        params: Vec<String>,
+        body: String,
+    },
 }
 
 impl fmt::Display for Value {
@@ -16,6 +21,7 @@ impl fmt::Display for Value {
             Value::Boolean(true) => write!(f, "fax"),
             Value::Boolean(false) => write!(f, "cap"),
             Value::Null => write!(f, "nah"),
+            Value::Function { name, .. } => write!(f, "<fun {name}>"),
         }
     }
 }

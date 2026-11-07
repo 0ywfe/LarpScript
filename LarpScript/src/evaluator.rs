@@ -23,57 +23,50 @@ static PRATT_PARSER: LazyLock<PrattParser<Rule>> = LazyLock::new(|| {
         .op(Op::postfix(Rule::fac))
 });
 
-pub fn evaluate_primary(primary: Pair<Rule>) -> Result<Value, RuntimeError> {
-    match primary.as_rule() {
-        Rule::number => {
-            let number: f64 = primary
-                .as_str()
-                .parse()
-                .map_err(|_| RuntimeError::InvalidNumber)?;
+fn parse_string(raw: &str) -> String {
+    let inner = &raw[1..raw.len() - 1];
+    let mut result = String::new();
+    let mut chars = inner.chars();
 
-            Ok(Value::Number(number))
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.next() {
+                Some('n') => result.push('\n'),
+                Some('t') => result.push('\t'),
+                Some('r') => result.push('\r'),
+                Some('"') => result.push('"'),
+                Some('\\') => result.push('\\'),
+                Some(other) => {
+                    result.push('\\');
+                    result.push(other);
+                }
+                None => result.push('\\'),
+            }
+        } else {
+            result.push(ch);
         }
-        Rule::string => {
-            let raw = primary.as_str();
-
-            let value = raw
-                .strip_prefix('"')
-                .and_then(|s| s.strip_suffix('"'))
-                .unwrap_or(raw);
-
-            Ok(Value::String(value.to_string()))
-        }
-        Rule::boolean => match primary.as_str() {
-            "fax" => Ok(Value::Boolean(true)),
-            "cap" => Ok(Value::Boolean(false)),
-            _ => Err(RuntimeError::InvalidBoolean),
-        },
-        Rule::null => Ok(Value::Null),
-        Rule::expr => evaluate_expression(primary),
-        rule => Err(RuntimeError::UnexpectedToken(rule)),
     }
+
+    result
 }
 
-fn evaluate_primary_with_lookup(
+fn evaluate_primary(
     primary: Pair<Rule>,
     lookup: &mut dyn FnMut(&str) -> Result<Value, RuntimeError>,
+    call: &mut dyn FnMut(&str, Vec<Value>) -> Result<Value, RuntimeError>,
 ) -> Result<Value, RuntimeError> {
     match primary.as_rule() {
         Rule::number => {
-            let number: f64 = primary
+            let number = primary
                 .as_str()
-                .parse()
+                .parse::<f64>()
                 .map_err(|_| RuntimeError::InvalidNumber)?;
+            if !number.is_finite() {
+                return Err(RuntimeError::InvalidNumber);
+            }
             Ok(Value::Number(number))
         }
-        Rule::string => {
-            let raw = primary.as_str();
-            let value = raw
-                .strip_prefix('"')
-                .and_then(|s| s.strip_suffix('"'))
-                .unwrap_or(raw);
-            Ok(Value::String(value.to_string()))
-        }
+        Rule::string => Ok(Value::String(parse_string(primary.as_str()))),
         Rule::boolean => match primary.as_str() {
             "fax" => Ok(Value::Boolean(true)),
             "cap" => Ok(Value::Boolean(false)),
@@ -81,15 +74,30 @@ fn evaluate_primary_with_lookup(
         },
         Rule::null => Ok(Value::Null),
         Rule::identifier => lookup(primary.as_str()),
-        Rule::expr => evaluate_expression_with_lookup(primary, lookup),
+        Rule::expr => evaluate_expression_with_callbacks(primary, lookup, call),
+        Rule::call => {
+            let mut inner = primary.into_inner();
+            let name = inner
+                .next()
+                .ok_or(RuntimeError::MalformedStatement)?
+                .as_str()
+                .to_string();
+            let mut arguments = Vec::new();
+            for expression in inner {
+                arguments.push(evaluate_expression_with_callbacks(
+                    expression, lookup, call,
+                )?);
+            }
+            call(&name, arguments)
+        }
         rule => Err(RuntimeError::UnexpectedToken(rule)),
     }
 }
 
-pub fn apply_unary(operator: Pair<Rule>, operand: Value) -> Result<Value, RuntimeError> {
+fn apply_unary(operator: Pair<Rule>, operand: Value) -> Result<Value, RuntimeError> {
     match operator.as_rule() {
         Rule::negative => match operand {
-            Value::Number(num) => Ok(Value::Number(-num)),
+            Value::Number(n) => Ok(Value::Number(-n)),
             _ => Err(RuntimeError::InvalidOperandType),
         },
         Rule::logical_not => match operand {
@@ -100,18 +108,18 @@ pub fn apply_unary(operator: Pair<Rule>, operand: Value) -> Result<Value, Runtim
     }
 }
 
-pub fn apply_postfix(operator: Pair<Rule>, operand: Value) -> Result<Value, RuntimeError> {
+fn apply_postfix(operand: Value, operator: Pair<Rule>) -> Result<Value, RuntimeError> {
     match operator.as_rule() {
         Rule::fac => {
-            let num = match operand {
-                Value::Number(num) => num,
+            let n = match operand {
+                Value::Number(n) => n,
                 _ => return Err(RuntimeError::InvalidOperandType),
             };
-            if !num.is_finite() || num < 0.0 || num.fract() != 0.0 || num > 170.0 {
+            if !n.is_finite() || n < 0.0 || n.fract() != 0.0 || n > 170.0 {
                 return Err(RuntimeError::InvalidOperandType);
             }
             let mut result = 1.0;
-            for i in 1..=(num as u64) {
+            for i in 1..=(n as u64) {
                 result *= i as f64;
             }
             Ok(Value::Number(result))
@@ -120,29 +128,22 @@ pub fn apply_postfix(operator: Pair<Rule>, operand: Value) -> Result<Value, Runt
     }
 }
 
-pub fn apply_binary(
-    left: Value,
-    operator: Pair<Rule>,
-    right: Value,
-) -> Result<Value, RuntimeError> {
-    let rule = operator.as_rule();
-    match rule {
-        Rule::equal => Ok(Value::Boolean(left == right)),
-        Rule::not_equal => Ok(Value::Boolean(left != right)),
+fn apply_binary(left: Value, operator: Pair<Rule>, right: Value) -> Result<Value, RuntimeError> {
+    use Value::*;
+    match operator.as_rule() {
+        Rule::equal => Ok(Boolean(left == right)),
+        Rule::not_equal => Ok(Boolean(left != right)),
         Rule::logical_and | Rule::logical_or => match (left, right) {
-            (Value::Boolean(l), Value::Boolean(r)) => {
-                let result = match rule {
-                    Rule::logical_and => l && r,
-                    Rule::logical_or => l || r,
-                    _ => unreachable!(),
-                };
-                Ok(Value::Boolean(result))
-            }
+            (Boolean(l), Boolean(r)) => Ok(Boolean(if operator.as_rule() == Rule::logical_and {
+                l && r
+            } else {
+                l || r
+            })),
             _ => Err(RuntimeError::InvalidOperandType),
         },
         Rule::add => match (left, right) {
-            (Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
-            (Value::String(l), Value::String(r)) => Ok(Value::String(l + &r)),
+            (Number(l), Number(r)) => Ok(Number(l + r)),
+            (String(l), String(r)) => Ok(String(l + &r)),
             _ => Err(RuntimeError::InvalidOperandType),
         },
         Rule::subtract
@@ -155,51 +156,39 @@ pub fn apply_binary(
         | Rule::greater_equal
         | Rule::less_equal => {
             let (l, r) = match (left, right) {
-                (Value::Number(l), Value::Number(r)) => (l, r),
+                (Number(l), Number(r)) => (l, r),
                 _ => return Err(RuntimeError::InvalidOperandType),
             };
-            match rule {
-                Rule::subtract => Ok(Value::Number(l - r)),
-                Rule::multiply => Ok(Value::Number(l * r)),
-                Rule::divide => {
-                    if r == 0.0 {
-                        Err(RuntimeError::DivisionByZero)
-                    } else {
-                        Ok(Value::Number(l / r))
-                    }
-                }
-                Rule::modulo => {
-                    if r == 0.0 {
-                        Err(RuntimeError::DivisionByZero)
-                    } else {
-                        Ok(Value::Number(l % r))
-                    }
-                }
-                Rule::power => Ok(Value::Number(l.powf(r))),
-                Rule::greater_than => Ok(Value::Boolean(l > r)),
-                Rule::less_than => Ok(Value::Boolean(l < r)),
-                Rule::greater_equal => Ok(Value::Boolean(l >= r)),
-                Rule::less_equal => Ok(Value::Boolean(l <= r)),
+            match operator.as_rule() {
+                Rule::subtract => Ok(Number(l - r)),
+                Rule::multiply => Ok(Number(l * r)),
+                Rule::divide | Rule::modulo if r == 0.0 => Err(RuntimeError::DivisionByZero),
+                Rule::divide => Ok(Number(l / r)),
+                Rule::modulo => Ok(Number(l % r)),
+                Rule::power => Ok(Number(l.powf(r))),
+
+                Rule::greater_than => Ok(Boolean(l > r)),
+                Rule::less_than => Ok(Boolean(l < r)),
+                Rule::greater_equal => Ok(Boolean(l >= r)),
+                Rule::less_equal => Ok(Boolean(l <= r)),
+
                 _ => unreachable!(),
             }
         }
+
         rule => Err(RuntimeError::UnexpectedToken(rule)),
     }
 }
 
-pub fn evaluate_expression(expression: Pair<Rule>) -> Result<Value, RuntimeError> {
-    let mut lookup = |name: &str| Err(RuntimeError::UndefinedVariable(name.to_string()));
-    evaluate_expression_with_lookup(expression, &mut lookup)
-}
-
-pub fn evaluate_expression_with_lookup(
+pub fn evaluate_expression_with_callbacks(
     expression: Pair<Rule>,
     lookup: &mut dyn FnMut(&str) -> Result<Value, RuntimeError>,
+    call: &mut dyn FnMut(&str, Vec<Value>) -> Result<Value, RuntimeError>,
 ) -> Result<Value, RuntimeError> {
     PRATT_PARSER
-        .map_primary(|primary| evaluate_primary_with_lookup(primary, lookup))
+        .map_primary(|primary| evaluate_primary(primary, lookup, call))
         .map_prefix(|operator, operand| apply_unary(operator, operand?))
-        .map_postfix(|operand, operator| apply_postfix(operator, operand?))
+        .map_postfix(|operand, operator| apply_postfix(operand?, operator))
         .map_infix(|left, operator, right| apply_binary(left?, operator, right?))
         .parse(expression.into_inner())
 }

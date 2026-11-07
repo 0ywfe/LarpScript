@@ -8,49 +8,62 @@ pub struct Binding {
     pub is_constant: bool,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Environment {
-    globals: HashMap<String, Binding>,
+    scopes: Vec<HashMap<String, Binding>>,
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self {
+            scopes: vec![HashMap::new()],
+        }
+    }
 }
 
 impl Environment {
     pub fn new() -> Self {
         Self::default()
     }
-
+    pub fn push_scope(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+    pub fn pop_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            self.scopes.pop();
+        }
+    }
     pub fn define_variable(
         &mut self,
         name: String,
         value: Value,
         is_constant: bool,
     ) -> Result<(), RuntimeError> {
-        if self.globals.contains_key(&name) {
+        let scope = self.scopes.last_mut().unwrap();
+        if scope.contains_key(&name) {
             return Err(RuntimeError::DuplicateVariable(name));
         }
-
-        self.globals.insert(name, Binding { value, is_constant });
-
+        scope.insert(name, Binding { value, is_constant });
         Ok(())
     }
-
     pub fn get_variable(&self, name: &str) -> Result<Value, RuntimeError> {
-        self.globals
-            .get(name)
-            .map(|binding| binding.value.clone())
-            .ok_or_else(|| RuntimeError::UndefinedVariable(name.to_string()))
-    }
-
-    pub fn assign_variable(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
-        let binding: &mut Binding = self
-            .globals
-            .get_mut(name)
-            .ok_or_else(|| RuntimeError::UndefinedVariable(name.to_string()))?;
-
-        if binding.is_constant {
-            return Err(RuntimeError::ConstantReassignment(name.to_string()));
+        for scope in self.scopes.iter().rev() {
+            if let Some(binding) = scope.get(name) {
+                return Ok(binding.value.clone());
+            }
         }
-
-        binding.value = value;
-        Ok(())
+        Err(RuntimeError::UndefinedVariable(name.to_string()))
+    }
+    pub fn assign_variable(&mut self, name: &str, value: Value) -> Result<(), RuntimeError> {
+        for scope in self.scopes.iter_mut().rev() {
+            if let Some(binding) = scope.get_mut(name) {
+                if binding.is_constant {
+                    return Err(RuntimeError::ConstantReassignment(name.to_string()));
+                }
+                binding.value = value;
+                return Ok(());
+            }
+        }
+        Err(RuntimeError::UndefinedVariable(name.to_string()))
     }
 }

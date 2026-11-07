@@ -3,135 +3,108 @@
 
 > A programming language for the chronically online.
 
-LarpScript is a custom interpreted programming language written in Rust. It features a slang-inspired syntax and uses [Pest](https://pest.rs/) for grammar definition and parsing.
-
-## Syntax
-
-LarpScript uses custom keywords for its language constructs.
-
-| Keyword | Description |
-|---|---|
-| `cook` | Variable declaration |
-| `locked` | Constant declaration |
-| `yap` | Print statement |
-| `fax` | Boolean `true` |
-| `cap` | Boolean `false` |
-| `nah` | Null value |
-| `if` | Conditional statement |
-| `else` | Alternative branch |
-| `loop` | Loop statement |
-| `bet` | Break statement |
-| `clown` | Continue statement |
-| `fun` | Function declaration |
-| `mog` | Return statement |
-| `and` | Logical AND |
-| `or` | Logical OR |
-| `not` | Logical NOT |
+LarpScript is a small interpreted programming language written in Rust.
+It uses a custom slang-inspired syntax and Pest for parsing.
 
 ## Features
 
-### Language Grammar
-- Custom grammar defined using Pest.
-- Variable and constant declarations.
-- Print statements.
-- Conditional statements with optional `else` blocks.
-- Loop statements.
-- Function declarations with parameters.
-- Return, break, and continue statements.
-- Assignment statements.
-- Single-line comments using `//`.
+- Variables and constants
+- Numbers, strings, booleans and null
+- Arithmetic and comparison operators
+- Logical operators
+- Operator precedence
+- Factorial operator
+- Conditional statements
+- While-style loops
+- Break and continue
+- Functions and parameters
+- Recursive function calls
+- Return values
+- Nested scopes
+- Runtime and syntax errors
+- Single-line comments
 
-### Data Types
-- Numbers (`f64`)
-- Strings
-- Booleans (`fax`, `cap`)
-- Null (`nah`)
+## Syntax
 
-### Expressions
-The grammar supports:
-- Arithmetic operators: `+`, `-`, `*`, `/`, `^`
-- Comparison operators: `==`, `!=`, `<`, `>`
-- Logical operators: `and`, `or`, `not`
-- Unary negation: `-`
-- Factorial: `!`
-- Parenthesized expressions
-- Operator precedence through Pest's Pratt parser
+| Keyword | Meaning |
+|---|---|
+| `cook` | Declare a variable |
+| `locked` | Declare a constant |
+| `yap` | Print |
+| `fax` | True |
+| `cap` | False |
+| `nah` | Null |
+| `loop` | Loop |
+| `bet` | Break |
+| `clown` | Continue |
+| `fun` | Function |
+| `mog` | Return |
 
-### Interpreter Components
-- Grammar definition using Pest.
-- Program and expression parsing.
-- Expression evaluation using a Pratt parser.
-- Runtime value representation.
-- Runtime error definitions.
-
-## Example Syntax
-
-### Variables
+## Example
 
 ```larp
-cook username = "sulfurcodes";
+cook username = "Isam";
 cook age = 19;
-locked language = "LarpScript";
-```
 
-### Output
+fun factorial(n) {
+    if n <= 1 {
+        mog 1;
+    }
 
-```larp
-yap("Hello, world!");
-yap("Welcome to LarpScript");
-```
+    mog n * factorial(n - 1);
+}
 
-### Conditions
+yap("Hello, " + username);
+yap(factorial(5));
 
-```larp
-if age > 18 {
-    yap("You're good to go!");
+if age >= 18 {
+    yap("You're an adult.");
 } else {
-    yap("Not old enough.");
+    yap("You're a minor.");
 }
 ```
 
-### Loops
+## Running LarpScript
 
-```larp
-loop age < 25 {
-    yap(age);
-}
+Requirements:
+- Rust
+- Cargo
+
+Clone the repository:
+
+```bash
+git clone https://github.com/sulfurcodes/LarpScript.git
+cd LarpScript/LarpScript
 ```
 
-### Functions
+Run a source file:
 
-```larp
-fun greet(name) {
-    yap("Hello!");
-    mog;
-}
+```bash
+cargo run -- examples/hello.larp
 ```
+
+Run tests:
+
+```bash
+cargo test
+```
+
+## Operators
+
+| Category | Operators |
+|---|---|
+| Arithmetic | `+`, `-`, `*`, `/`, `%`, `^` |
+| Comparison | `==`, `!=`, `>`, `<`, `>=`, `<=` |
+| Logical | `and`, `or`, `not` |
+| Unary | `-` |
+| Postfix | `!` |
 
 ## Built With
 
-- **Rust** — Implementation language
-- **Pest** — Parsing and grammar definition
-
-## Project Structure
-
-```text
-LarpScript/
-├── src/
-│   ├── grammar.pest
-│   ├── parser.rs
-│   ├── evaluator.rs
-│   ├── runtime.rs
-│   ├── value.rs
-│   ├── environment.rs
-│   ├── interpreter.rs
-│   ├── error.rs
-│   ├── lib.rs
-│   └── main.rs
-├── examples/
-└── tests/
-```
+- Rust
+- Pest
 
 ## License
 
-This project is licensed under the MIT License.
+MIT
+

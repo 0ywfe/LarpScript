@@ -1,0 +1,20 @@
+fun greet(name) {
+    yap("Hello, " + name);
+}
+
+fun add(a, b) {
+    mog a + b;
+}
+
+fun factorial(n) {
+    if n <= 1 {
+        mog 1;
+    }
+    mog n * factorial(n - 1);
+}
+
+greet("Sulfurcodes");
+
+cook result = add(10, 20);
+yap(result);
+yap(factorial(5));

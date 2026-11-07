@@ -1,0 +1,22 @@
+cook age = 19;
+
+if age >= 18 {
+    yap("Adult");
+} else {
+    yap("Minor");
+}
+
+cook count = 0;
+
+loop count < 10 {
+    count = count + 1;
+    if count == 3 {
+        clown;
+    }
+    if count == 7 {
+        bet;
+    }
+    yap(count);
+}
+
+yap("Loop finished");

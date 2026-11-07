@@ -1,0 +1,23 @@
+// Variables and constants
+cook username = "Sulfurcodes";
+cook age = 19;
+cook score = 100;
+
+locked language = "LarpScript";
+
+yap(username);
+yap(age);
+yap(score);
+yap(language);
+
+// Assignment
+age = age + 1;
+score = score + 50;
+
+yap(age);
+yap(score);
+
+// Data types
+yap(fax);
+yap(cap);
+yap(nah);
